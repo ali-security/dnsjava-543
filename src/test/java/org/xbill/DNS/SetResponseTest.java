@@ -188,6 +188,134 @@ class SetResponseTest {
     RRset[] exp = new RRset[] {rrs};
     assertArrayEquals(exp, sr.answers().toArray());
   }
+  
+  @Test
+  void ofTypeWithCachedRRsetTrue() throws UnknownHostException {
+    SetResponse sr =
+        SetResponse.ofType(
+            SetResponse.SUCCESSFUL);
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+      Name.fromConstantString("The.Name."),
+      DClass.IN,
+      0xABCD,
+      InetAddress.getByName("192.168.0.1"))), 0, 0, true));
+    assertEquals(true, sr.isAuthenticated());
+  }
+
+  @Test
+  void ofTypeWithCachedRRsetFalse() throws UnknownHostException {
+    SetResponse sr =
+        SetResponse.ofType(SetResponse.SUCCESSFUL);
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+      Name.fromConstantString("The.Name."),
+      DClass.IN,
+      0xABCD,
+      InetAddress.getByName("192.168.0.1"))), 0, 0, false));
+    assertEquals(false, sr.isAuthenticated());
+  }
+
+  @Test
+  void addRRsetAuthenticated1() throws UnknownHostException {
+    RRset rrs = new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1")));
+    SetResponse sr;
+    sr = SetResponse.ofType(SetResponse.SUCCESSFUL);
+    sr.addRRset(new Cache.CacheRRset(rrs, 0, 0, true));
+
+    RRset[] exp = new RRset[] {rrs};
+    assertArrayEquals(exp, sr.answers().toArray());
+    assertEquals(true, sr.isAuthenticated());
+
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1"))), 0, 0, true));
+    assertEquals(true, sr.isAuthenticated());
+    assertEquals(2, sr.answers().size());
+  }
+  
+  @Test
+  void addRRsetAuthenticated2() throws UnknownHostException {
+    RRset rrs = new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1")));
+    SetResponse sr;
+    sr = SetResponse.ofType(SetResponse.SUCCESSFUL);
+    sr.addRRset(new Cache.CacheRRset(rrs, 0, 0, false));
+
+    RRset[] exp = new RRset[] {rrs};
+    assertArrayEquals(exp, sr.answers().toArray());
+    assertEquals(false, sr.isAuthenticated());
+
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1"))), 0, 0, false));
+    assertEquals(false, sr.isAuthenticated());
+    assertEquals(2, sr.answers().size());
+  }
+
+  
+  @Test
+  void addRRsetAuthenticated3() throws UnknownHostException {
+    RRset rrs = new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1")));
+    SetResponse sr;
+    sr = SetResponse.ofType(SetResponse.SUCCESSFUL, true);
+    sr.addRRset(rrs);
+
+    RRset[] exp = new RRset[] {rrs};
+    assertArrayEquals(exp, sr.answers().toArray());
+    assertEquals(true, sr.isAuthenticated());
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1"))), 0, 0, false));
+    assertEquals(false, sr.isAuthenticated());
+    assertEquals(2, sr.answers().size());
+  }
+
+  @Test
+  void addRRsetAuthenticated4() throws UnknownHostException {
+    RRset rrs = new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1")));
+    SetResponse sr;
+    sr = SetResponse.ofType(SetResponse.SUCCESSFUL, false);
+    sr.addRRset(rrs);
+
+    RRset[] exp = new RRset[] {rrs};
+    assertArrayEquals(exp, sr.answers().toArray());
+    assertEquals(false, sr.isAuthenticated());
+
+
+    sr.addRRset(new Cache.CacheRRset(new RRset(new ARecord(
+        Name.fromConstantString("The.Name."),
+        DClass.IN,
+        0xABCD,
+        InetAddress.getByName("192.168.0.1"))), 0, 0, false));
+    assertEquals(false, sr.isAuthenticated());
+    assertEquals(2, sr.answers().size());
+  }
+
 
   @Test
   void addRRset_multiple() throws TextParseException, UnknownHostException {

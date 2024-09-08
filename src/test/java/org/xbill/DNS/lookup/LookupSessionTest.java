@@ -4,11 +4,19 @@ package org.xbill.DNS.lookup;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junitpioneer.jupiter.cartesian.CartesianTest.Enum;
+import static org.junitpioneer.jupiter.cartesian.CartesianTest.Values;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -18,9 +26,11 @@ import static org.xbill.DNS.LookupTest.DUMMY_NAME;
 import static org.xbill.DNS.LookupTest.LONG_LABEL;
 import static org.xbill.DNS.LookupTest.answer;
 import static org.xbill.DNS.LookupTest.fail;
+import static org.xbill.DNS.LookupTest.multiAnswer;
 import static org.xbill.DNS.Type.A;
 import static org.xbill.DNS.Type.AAAA;
 import static org.xbill.DNS.Type.CNAME;
+import static org.xbill.DNS.Type.DNAME;
 import static org.xbill.DNS.Type.MX;
 
 import java.net.InetAddress;
@@ -32,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +50,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
+import org.junitpioneer.jupiter.cartesian.CartesianTest.Values;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -70,7 +83,9 @@ class LookupSessionTest {
 
   private static final ARecord LOOPBACK_A =
       new ARecord(DUMMY_NAME, IN, 3600, InetAddress.getLoopbackAddress());
+  private static final ARecord EXAMPLE_A = (ARecord) LOOPBACK_A.withName(name("example.com."));
   private static final AAAARecord LOOPBACK_AAAA;
+  private static final String INVALID_SERVER_RESPONSE_MESSAGE = "refusing to return it";
   private HostsFileParser lookupSessionTestHostsFileParser;
 
   static {

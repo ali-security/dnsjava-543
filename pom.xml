@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-    xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>dnsjava</groupId>
@@ -113,20 +113,14 @@
                         <Import-Package>
                             !org.xbill.DNS*,
                             !sun.*,
-                            !lombok,
-                            android.*;resolution:=optional,
-                            javax.naming.*;resolution:=optional,
-                            com.sun.jna.*;resolution:=optional,*
-                            org.bouncycastle.*;resolution:=optional,*
+                            !lombok, android.*;resolution:=optional, javax.naming.*;resolution:=optional, com.sun.jna.*;resolution:=optional,* org.bouncycastle.*;resolution:=optional,*
                         </Import-Package>
                         <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
-                        <Bundle-License>
-                            BSD-2-Clause;link="https://raw.githubusercontent.com/dnsjava/dnsjava/master/LICENSE"
+                        <Bundle-License> BSD-2-Clause;link="https://raw.githubusercontent.com/dnsjava/dnsjava/master/LICENSE"
                         </Bundle-License>
                         <_removeheaders>Bnd-*, Tool, Require-Capability, Include-Resource</_removeheaders>
                         <Include-Resource>
-                            {maven-resources},
-                            META-INF/LICENSE=LICENSE
+                            {maven-resources}, META-INF/LICENSE=LICENSE
                         </Include-Resource>
                         <Main-Class>org.xbill.DNS.tools.Tools</Main-Class>
                     </instructions>
@@ -374,6 +368,18 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${org.junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.25.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit-pioneer</groupId>
+            <artifactId>junit-pioneer</artifactId>
+            <version>2.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>

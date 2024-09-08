@@ -564,7 +564,7 @@ public final class Lookup {
     Message query = Message.newQuery(question);
     Message response;
     try {
-      response = resolver.send(query);
+      response = resolver.send(query).normalize(query);
     } catch (IOException e) {
       log.debug(
           "Lookup for {}/{}, id={} failed using resolver {}",

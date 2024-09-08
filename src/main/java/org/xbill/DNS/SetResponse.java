@@ -6,6 +6,9 @@ package org.xbill.DNS;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+
 /**
  * The Response from a query to {@link Cache#lookupRecords(Name, int, int)} or {@link
  * Zone#findRecords(Name, int)}.
@@ -56,6 +59,10 @@ public class SetResponse {
   private static final SetResponse nxrrset = new SetResponse(NXRRSET);
 
   private int type;
+
+  @Getter(AccessLevel.PACKAGE)
+  private boolean isAuthenticated;
+
   private List<RRset> data;
 
   private SetResponse() {}
@@ -69,6 +76,12 @@ public class SetResponse {
     this.data.add(rrset);
   }
 
+  SetResponse(int type, RRset rrset, boolean isAuthenticated) {
+    this(type, rrset);
+    this.isAuthenticated = isAuthenticated;
+  }
+
+
   SetResponse(int type) {
     if (type < 0 || type > 6) {
       throw new IllegalArgumentException("invalid type");
@@ -77,7 +90,7 @@ public class SetResponse {
     this.data = null;
   }
 
-  static SetResponse ofType(int type) {
+  static SetResponse ofType(int type, boolean isAuthenticated) {
     switch (type) {
       case UNKNOWN:
         return unknown;
@@ -92,15 +105,27 @@ public class SetResponse {
         SetResponse sr = new SetResponse();
         sr.type = type;
         sr.data = null;
+        sr.isAuthenticated = isAuthenticated;
         return sr;
       default:
         throw new IllegalArgumentException("invalid type");
     }
   }
 
+  static SetResponse ofType(int type) {
+    return ofType(type, false);
+  }
+
   void addRRset(RRset rrset) {
     if (data == null) {
       data = new ArrayList<>();
+      if (rrset instanceof Cache.CacheRRset) {
+        isAuthenticated = ((Cache.CacheRRset) rrset).isAuthenticated();
+      }
+    } else {
+      if (rrset instanceof Cache.CacheRRset && isAuthenticated) {
+        isAuthenticated = ((Cache.CacheRRset) rrset).isAuthenticated();
+      }
     }
     data.add(rrset);
   }

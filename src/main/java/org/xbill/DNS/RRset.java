@@ -215,6 +215,16 @@ public class RRset implements Serializable {
   }
 
   /**
+   * Returns the actual type of the records, i.e. for signatures not the type covered but {@link
+   * Type#RRSIG}.
+   *
+   * @see Type
+   */
+  int getActualType() {
+    return first().getType();
+  }
+
+  /**
    * Returns the class of the records
    *
    * @see DClass

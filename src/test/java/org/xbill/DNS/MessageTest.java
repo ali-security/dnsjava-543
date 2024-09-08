@@ -124,5 +124,18 @@ public class MessageTest {
       assertEquals(TXTRecord.class, records.get(0).getClass());
       assertEquals(OPTRecord.class, records.get(1).getClass());
     }
+
+    @Test
+    void normalize() throws WireParseException {
+      Record queryRecord =
+          Record.newRecord(Name.fromConstantString("example.com."), Type.MX, DClass.IN);
+      Message query = Message.newQuery(queryRecord);
+      Message response = new Message();
+      response.addRecord(queryRecord, Section.QUESTION);
+      response.addRecord(queryRecord, Section.ADDITIONAL);
+      response = response.normalize(query, true);
+      assertTrue(response.getSection(Section.ANSWER).isEmpty());
+      assertTrue(response.getSection(Section.ADDITIONAL).isEmpty());
+    }
   }
 }

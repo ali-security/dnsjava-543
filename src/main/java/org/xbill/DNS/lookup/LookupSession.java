@@ -34,6 +34,7 @@ import org.xbill.DNS.Resolver;
 import org.xbill.DNS.Section;
 import org.xbill.DNS.SetResponse;
 import org.xbill.DNS.Type;
+import org.xbill.DNS.WireParseException;
 import org.xbill.DNS.hosts.HostsFileParser;
 
 /**
@@ -80,6 +81,8 @@ public class LookupSession {
   /** Configures the local hosts database file parser to use within this session. */
   private final HostsFileParser hostsFileParser;
 
+  private IrrelevantRecordMode irrelevantRecordMode = IrrelevantRecordMode.REMOVE;
+
   /**
    * A builder for {@link LookupSession} instances where functionality is mostly generated as
    * described in the <a href="https://projectlombok.org/features/Builder">Lombok Builder</a>
@@ -96,6 +99,11 @@ public class LookupSession {
      */
     public LookupSessionBuilder defaultHostsFileParser() {
       hostsFileParser = new HostsFileParser();
+      return this;
+    }
+
+    LookupSessionBuilder irrelevantRecordMode(IrrelevantRecordMode irrelevantRecordMode) {
+      this.irrelevantRecordMode = irrelevantRecordMode;
       return this;
     }
 
@@ -127,6 +135,22 @@ public class LookupSession {
         return super.build();
       }
     };
+  }
+
+  // Visible for testing only
+  Cache getCache(int dclass) {
+    return caches.get(dclass);
+  }
+
+  /**
+   * Make an asynchronous lookup with the provided {@link Record}.
+   *
+   * @param question the name, type and DClass to look up.
+   * @return A {@link CompletionStage} what will yield the eventual lookup result.
+   * @since 3.6
+   */
+  public CompletionStage<LookupResult> lookupAsync(Record question) {
+    return lookupAsync(question.getName(), question.getType(), question.getDClass());
   }
 
   /**
@@ -194,7 +218,7 @@ public class LookupSession {
             } else {
               r = new AAAARecord(name, DClass.IN, 0, result.get());
             }
-            return new LookupResult(Collections.singletonList(r), Collections.emptyList());
+            return new LookupResult(Record.newRecord(name, type, DClass.IN), true, r);
           }
         }
       } catch (IOException e) {
@@ -236,8 +260,25 @@ public class LookupSession {
   }
 
   private CompletionStage<LookupResult> lookupWithResolver(Record queryRecord, List<Name> aliases) {
+    Message query = Message.newQuery(queryRecord);
     return resolver
-        .sendAsync(Message.newQuery(queryRecord))
+        .sendAsync(query)
+        .thenCompose(
+            m -> {
+              try {
+                Message normalized = m.normalize(query, irrelevantRecordMode == IrrelevantRecordMode.THROW);
+                if (normalized == null) {
+                  return completeExceptionally(
+                      new InvalidZoneDataException("Failed to normalize message"));
+                }
+                return CompletableFuture.completedFuture(normalized);
+              } catch (WireParseException e) {
+                return completeExceptionally(
+                    new LookupFailedException(
+                        "Message normalization failed, refusing to return it"));
+              }
+            }
+        )
         .thenApply(this::maybeAddToCache)
         .thenApply(answer -> buildResult(answer, aliases, queryRecord));
   }
@@ -268,9 +309,8 @@ public class LookupSession {
     return null;
   }
 
-  private <T extends LookupFailedException> CompletionStage<LookupResult> completeExceptionally(
-      T failure) {
-    CompletableFuture<LookupResult> future = new CompletableFuture<>();
+  private <T extends Throwable, R> CompletionStage<R> completeExceptionally(T failure) {
+    CompletableFuture<R> future = new CompletableFuture<>();
     future.completeExceptionally(failure);
     return future;
   }
