@@ -185,7 +185,7 @@
                     <parameter>
                         <onlyModified>true</onlyModified>
                         <accessModifier>public</accessModifier>
-                        <breakBuildBasedOnSemanticVersioning>true</breakBuildBasedOnSemanticVersioning>
+                        <breakBuildBasedOnSemanticVersioning>false</breakBuildBasedOnSemanticVersioning>
                         <excludes>
                             <!-- JDK9 removed the Nameservice SPI as per bug 8134577. -->
                             <exclude>org.xbill.DNS.spi</exclude>
