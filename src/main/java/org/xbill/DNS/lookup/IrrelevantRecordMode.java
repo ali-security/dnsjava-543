@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: BSD-2-Clause
 package org.xbill.DNS.lookup;
 
 /** Defines the handling of irrelevant records during messages normalization. */
