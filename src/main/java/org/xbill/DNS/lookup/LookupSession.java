@@ -271,7 +271,7 @@ public class LookupSession {
                   return completeExceptionally(
                       new InvalidZoneDataException("Failed to normalize message"));
                 }
-                return CompletableFuture.completedFuture(m);
+                return CompletableFuture.completedFuture(normalized);
               } catch (WireParseException e) {
                 return completeExceptionally(
                     new LookupFailedException(
@@ -362,7 +362,11 @@ public class LookupSession {
   private Record buildRedirectQuery(LookupResult response, Record question) {
     List<Record> answer = response.getRecords();
     Record firstAnswer = answer.get(0);
-    if (answer.size() != 1) {
+    int cnameCount = (int) answer.stream().filter(r -> r.getType() == Type.CNAME).count();
+    int dnameCount = (int) answer.stream().filter(r -> r.getType() == Type.DNAME).count();
+
+    // normalized messages can have more than 1 answer, but only one of each type
+    if (cnameCount > 1 || dnameCount > 1) {
       throw new InvalidZoneDataException("Multiple CNAME RRs not allowed, see RFC1034 3.6.2");
     }
 
