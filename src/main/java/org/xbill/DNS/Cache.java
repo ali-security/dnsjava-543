@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import android.R.bool;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -751,7 +750,7 @@ public class Cache {
         addRRset(ns, cred, isAuthenticated);
         markAdditional(ns, additionalNames);
         if (response == null) {
-          response = new SetResponse(SetResponse.DELEGATION, ns);
+          response = new SetResponse(SetResponse.DELEGATION, ns, isAuthenticated);
         }
       }
     } else if (rcode == Rcode.NOERROR && ns != null) {
