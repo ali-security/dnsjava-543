@@ -3,6 +3,7 @@ package org.xbill.DNS.lookup;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -746,6 +747,281 @@ class LookupSessionTest {
     verify(mockResolver).sendAsync(any());
   }
 
+  @Test
+  void lookupAsync_simpleCnameRedirectNoExtra() throws ExecutionException, InterruptedException {
+    Name query = name("cname.r.");
+    Name target = name("a.b.");
+    Function<Name, Record[]> nameToRecord =
+        name ->
+            query.equals(name)
+                ? new Record[] {cname(query.toString(), target.toString())}
+                : new Record[] {
+                  LOOPBACK_A, EXAMPLE_A,
+                };
+    wireUpMockResolver(mockResolver, q -> multiAnswer(q, nameToRecord));
+
+    LookupSession lookupSession =
+        LookupSession.builder().resolver(mockResolver).build();
+
+    CompletableFuture<LookupResult> f =
+        lookupSession.lookupAsync(query, A, IN).toCompletableFuture();
+    LookupResult result = f.get();
+    assertEquals(result.getRecords().size(), 1);
+    assertEquals(result.getRecords().get(0), LOOPBACK_A.withName(target));
+  }
+
+    @Test
+  void lookupAsync_dnameQuery() throws Exception {
+    Name query = name("dname.r.");
+    DNAMERecord response = dname(query.toString(), "a.b.");
+    Function<Name, Record> nameToRecord = name -> name.equals(query) ? response : LOOPBACK_A;
+    wireUpMockResolver(mockResolver, q -> answer(q, nameToRecord));
+
+    LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+
+    CompletionStage<LookupResult> resultFuture = lookupSession.lookupAsync(query, DNAME, IN);
+
+    LookupResult result = resultFuture.toCompletableFuture().get();
+    assertEquals(singletonList(response), result.getRecords());
+    assertEquals(emptyList(), result.getAliases());
+    verify(mockResolver, times(1)).sendAsync(any());
+  }
+
+  @Test
+  void lookupAsync_cnameQueryExtra1() throws ExecutionException, InterruptedException {
+    Name query = name("cname.r.");
+    Name target = name("a.b.");
+    CNAMERecord response1 = cname(query.toString(), target.toString());
+    CNAMERecord response2 = cname("additional.r.", target.toString());
+    Function<Name, Record[]> nameToRecord =
+        name ->
+            query.equals(name) ? new Record[] {response1, response2} : new Record[] {LOOPBACK_A};
+    wireUpMockResolver(mockResolver, q -> multiAnswer(q, nameToRecord));
+
+    LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+    CompletableFuture<LookupResult> future =
+        lookupSession.lookupAsync(query, CNAME, IN).toCompletableFuture();
+    
+    LookupResult result = future.get();
+    assertEquals(result.getRecords().size(), 1);
+    assertEquals(result.getRecords().get(0), response1);
+    assertEquals(result.getAliases(), emptyList());
+
+    verify(mockResolver, times(1)).sendAsync(any());
+  }
+
+  @Test
+  void lookupAsync_cnameQueryExtra2()
+      throws ExecutionException, InterruptedException {
+    Name query = name("cname.r.");
+    Name target = name("a.b.");
+    CNAMERecord response1 = cname(query.toString(), target.toString());
+    CNAMERecord response2 = cname("additional.r.", target.toString());
+    Function<Name, Record[]> nameToRecord =
+        name ->
+            query.equals(name) ? new Record[] {response1, response2} : new Record[] {LOOPBACK_A};
+    wireUpMockResolver(mockResolver, q -> multiAnswer(q, nameToRecord));
+    Cache mockCache = mock(Cache.class);
+
+    LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).cache(IN, mockCache).build();
+    CompletableFuture<LookupResult> future =
+        lookupSession.lookupAsync(query, CNAME, IN).toCompletableFuture();
+    
+    LookupResult result = future.get();
+    assertEquals(result.getRecords().size(), 1);
+    assertEquals(result.getRecords().get(0), response1);
+    assertEquals(result.getAliases(), emptyList());
+
+    Cache cache = lookupSession.getCache(IN);
+    verify(cache, times(0)).addMessage(any(Message.class));
+    assertEquals(0, cache.getSize());
+    verify(mockResolver, times(1)).sendAsync(any());
+  }
+
+  @Test
+  void lookupAsync_dnameQueryExtra1() throws ExecutionException, InterruptedException {
+    Name query = name("cname.r.");
+    Name target = name("a.b.");
+    DNAMERecord response1 = dname(query.toString(), target.toString());
+    DNAMERecord response2 = dname("additional.r.", target.toString());
+    Function<Name, Record[]> nameToRecord =
+        name ->
+            query.equals(name) ? new Record[] {response1, response2} : new Record[] {LOOPBACK_A};
+    wireUpMockResolver(mockResolver, q -> multiAnswer(q, nameToRecord));
+
+    LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+    CompletableFuture<LookupResult> future = lookupSession.lookupAsync(query, DNAME, IN).toCompletableFuture();
+    LookupResult result = future.get();
+    assertEquals(result.getRecords().size(), 1);
+    assertEquals(result.getRecords().get(0), response1);
+    assertEquals(result.getAliases(), emptyList());
+
+    verify(mockResolver, times(1)).sendAsync(any());
+  }
+
+  @Test
+  void lookupAsync_dnameQueryExtra2() throws ExecutionException, InterruptedException {
+    Name query = name("cname.r.");
+    Name target = name("a.b.");
+    DNAMERecord response1 = dname(query.toString(), target.toString());
+    DNAMERecord response2 = dname("additional.r.", target.toString());
+    Function<Name, Record[]> nameToRecord =
+        name ->
+            query.equals(name) ? new Record[] {response1, response2} : new Record[] {LOOPBACK_A};
+    wireUpMockResolver(mockResolver, q -> multiAnswer(q, nameToRecord));
+    Cache mockCache = mock(Cache.class);
+
+    LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).cache(IN, mockCache).build();
+    CompletableFuture<LookupResult> future = lookupSession.lookupAsync(query, DNAME, IN).toCompletableFuture();
+    LookupResult result = future.get();
+    assertEquals(result.getRecords().size(), 1);
+    assertEquals(result.getRecords().get(0), response1);
+    assertEquals(result.getAliases(), emptyList());
+
+    Cache cache = lookupSession.getCache(IN);
+    verify(cache, times(0)).addMessage(any(Message.class));
+    assertEquals(0, cache.getSize());
+
+    verify(mockResolver, times(1)).sendAsync(any());
+  }
+
+@Test
+void lookupAsync_simpleDnameRedirectWrongSynthesizedCname1() throws ExecutionException, InterruptedException {
+  String from = "x.y.example.com.";
+  String to = "x.y.example.org.";
+  Name query = name("x.y.example.org.");
+  wireUpMockResolver(
+      mockResolver,
+      q ->
+          multiAnswer(
+              q,
+              name ->
+                  new Record[] {
+                    // Correct
+                    dname("example.org.", "example.net."),
+                    // Extra and wrong
+                    cname(from, to),
+                    // Correct
+                    LOOPBACK_A.withName(name("x.y.example.net.")),
+                    // Extra and wrong
+                    LOOPBACK_A.withName(name(to)),
+                  }));
+
+  LookupSession lookupSession =
+      LookupSession.builder().resolver(mockResolver).build();
+
+  CompletableFuture<LookupResult> future =
+      lookupSession.lookupAsync(query, A, IN).toCompletableFuture();
+  LookupResult result = future.get();
+  
+  assertEquals(result.getAliases().size(), 1);
+  assertEquals(result.getRecords().size(), 1);
+  assertEquals(result.getAliases().get(0), name("x.y.example.org."));
+  assertEquals(result.getRecords().get(0), LOOPBACK_A.withName(name("x.y.example.net.")));
+  
+  verify(mockResolver, times(2)).sendAsync(any());
+}
+
+@Test
+void lookupAsync_simpleDnameRedirectWrongSynthesizedCname2() throws ExecutionException, InterruptedException {
+  String from = "x.y.example.org.";
+  String to = "x.y.example.com.";
+  Name query = name("x.y.example.org.");
+  wireUpMockResolver(
+      mockResolver,
+      q ->
+          multiAnswer(
+              q,
+              name ->
+                  new Record[] {
+                    // Correct
+                    dname("example.org.", "example.net."),
+                    // Extra and wrong
+                    cname(from, to),
+                    // Correct
+                    LOOPBACK_A.withName(name("x.y.example.net.")),
+                    // Extra and wrong
+                    LOOPBACK_A.withName(name(to)),
+                  }));
+
+  LookupSession lookupSession =
+      LookupSession.builder().resolver(mockResolver).build();
+
+  CompletableFuture<LookupResult> future =
+      lookupSession.lookupAsync(query, A, IN).toCompletableFuture();
+  LookupResult result = future.get();
+  
+  assertEquals(result.getAliases().size(), 1);
+  assertEquals(result.getRecords().size(), 1);
+  assertEquals(result.getAliases().get(0), name("x.y.example.org."));
+  assertEquals(result.getRecords().get(0), LOOPBACK_A.withName(name("x.y.example.net.")));
+  
+  verify(mockResolver, times(2)).sendAsync(any());
+}
+
+@Test
+void lookupAsync_simpleDnameRedirectNoExtra()
+    throws ExecutionException, InterruptedException {
+  Name queryName = name("x.y.to.dname.");
+  wireUpMockResolver(
+      mockResolver,
+      question ->
+          multiAnswer(
+              question,
+              name ->
+                  name.equals(queryName)
+                      ? new Record[] {dname("to.dname.", "to.a.")}
+                      : new Record[] {
+                        // LOOPBACK_A will be transformed to 'x.y.to.a.'
+                        LOOPBACK_A, EXAMPLE_A,
+                      }));
+
+  LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+  CompletableFuture<LookupResult> future =
+      lookupSession.lookupAsync(queryName, A, IN).toCompletableFuture();
+  LookupResult result = future.get();
+
+  assertAll(
+      () -> {
+        assertEquals(result.getAliases().size(), 1);
+        assertEquals(result.getRecords().size(), 1);
+        assertEquals(result.getAliases().get(0), queryName);
+        assertEquals(result.getRecords().get(0), LOOPBACK_A.withName(name("x.y.to.a.")));
+      });
+
+  verify(mockResolver, times(2)).sendAsync(any());
+}
+
+@Test
+void lookupAsync_simpleCnameWrongInitial()
+    throws ExecutionException, InterruptedException {
+  Name query = name("first.example.com.");
+  wireUpMockResolver(mockResolver, q -> answer(q, name -> cname("a.", "b.")));
+
+  LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+  CompletableFuture<LookupResult> future = lookupSession.lookupAsync(query, A, IN).toCompletableFuture();
+  LookupResult result = future.get();
+  assertEquals(result.getAliases(), emptyList());
+  assertEquals(result.getRecords(), emptyList());
+
+  verify(mockResolver, times(1)).sendAsync(any());
+}
+
+@Test
+void lookupAsync_simpleDnameWrongInitial() throws ExecutionException, InterruptedException {
+  Name query = name("first.example.com.");
+  wireUpMockResolver(mockResolver, q -> answer(q, name -> dname("a.", "b.")));
+
+  LookupSession lookupSession = LookupSession.builder().resolver(mockResolver).build();
+
+  CompletableFuture<LookupResult> future =
+      lookupSession.lookupAsync(query, A, IN).toCompletableFuture();
+  LookupResult result = future.get();
+  assertEquals(result.getAliases(), emptyList());
+  assertEquals(result.getRecords(), emptyList());
+
+  verify(mockResolver, times(1)).sendAsync(any());
+  }
 
   private static CNAMERecord cname(String name, String target) {
     return new CNAMERecord(name(name), IN, 0, name(target));
