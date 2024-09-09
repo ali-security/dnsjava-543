@@ -375,7 +375,6 @@ public class Message implements Cloneable {
    * @see Section
    */
   public List<Record> getSection(int section) {
-    Section.check(section);
     if (sections[section] == null) {
       return Collections.emptyList();
     }
