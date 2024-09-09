@@ -770,7 +770,7 @@ class LookupSessionTest {
     assertEquals(result.getRecords().get(0), LOOPBACK_A.withName(target));
   }
 
-    @Test
+  @Test
   void lookupAsync_dnameQuery() throws Exception {
     Name query = name("dname.r.");
     DNAMERecord response = dname(query.toString(), "a.b.");

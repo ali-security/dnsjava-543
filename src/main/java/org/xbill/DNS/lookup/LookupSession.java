@@ -366,7 +366,7 @@ public class LookupSession {
     int dnameCount = (int) answer.stream().filter(r -> r.getType() == Type.DNAME).count();
 
     // normalized messages can have more than 1 answer, but only one of each type
-    if (cnameCount > 1 || dnameCount > 1) {
+    if (cnameCount > 1 || dnameCount > 1 || answer.size() == 0) {
       throw new InvalidZoneDataException("Multiple CNAME RRs not allowed, see RFC1034 3.6.2");
     }
 
