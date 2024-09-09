@@ -271,7 +271,7 @@ public class LookupSession {
                   return completeExceptionally(
                       new InvalidZoneDataException("Failed to normalize message"));
                 }
-                return CompletableFuture.completedFuture(normalized);
+                return CompletableFuture.completedFuture(m);
               } catch (WireParseException e) {
                 return completeExceptionally(
                     new LookupFailedException(
