@@ -64,7 +64,7 @@ jobs:
 
       # Upload jar only on ubuuntu java 11
       - name: "Upload jars"
-        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.java == 11 }}
+        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.java == 8 }}
         uses: actions/upload-artifact@v4
         with:
           name: "jars"
