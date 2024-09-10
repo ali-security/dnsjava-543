@@ -388,7 +388,7 @@ public class LookupSession {
   private static LookupResult buildResult(Message answer, List<Name> aliases, Record query) {
     int rcode = answer.getRcode();
     List<Record> answerRecords = answer.getSection(Section.ANSWER);
-    if (answerRecords.isEmpty()) {
+    if (answerRecords.isEmpty() && rcode != Rcode.NOERROR) {
       switch (rcode) {
         case Rcode.NXDOMAIN:
           throw new NoSuchDomainException(query.getName(), query.getType());
